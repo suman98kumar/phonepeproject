@@ -6,7 +6,9 @@ import psycopg2
 import streamlit as st
 import plotly.express as px
 from streamlit_option_menu import option_menu
-
+import seaborn as sns
+import matplotlib.pyplot as plt
+import plotly.io as pio
 #SQL Connecter 
 mydb=psycopg2.connect(host="localhost",    
                     user= "postgres",
@@ -62,18 +64,12 @@ Top_User=pd.DataFrame(table6,columns=("States","Years","Quarter","Top_Dist","Top
 
 #Functions
 
+
 def animate_all_amount(Map_User, Aggregated_Trans):
-    ## Clone the geo data
+    # Clone the geo data
     url = "https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson"
     response = requests.get(url)
     data1 = json.loads(response.content)
-
-    # Extract state names and sort them in alphabetical order
-    state_names_tra = [feature["properties"]["ST_NM"] for feature in data1["features"]]
-    state_names_tra.sort()
-
-    # Create a DataFrame with the state names column
-    df_state_names_tra = pd.DataFrame({"States": state_names_tra})
 
     frames = []
 
@@ -88,75 +84,55 @@ def animate_all_amount(Map_User, Aggregated_Trans):
 
     merged_df = pd.concat(frames)
 
-    fig_tra = px.choropleth(
+    fig_tra = px.line(
         merged_df,
-        geojson=data1,
-        locations="States",
-        featureidkey="properties.ST_NM",
-        color="Trans_Amount",
-        color_continuous_scale="Viridis",
-        range_color=(0, 4000000000),
-        hover_name="States",
+        x="Years",
+        y="Trans_Amount",
+        color="States",
+        line_group="States",
         title="Transaction Amount Across States Over Time",
-        animation_frame="Years",
-        animation_group="Quarter"
+        labels={"Trans_Amount": "Transaction Amount"},
+        animation_frame="Quarter",
     )
 
-    fig_tra.update_geos(fitbounds="locations", visible=False)
-    fig_tra.update_layout(width=600, height=700)
+    fig_tra.update_layout(width=700, height=500)
     fig_tra.update_layout(title_font={"size": 25})
-    fig_tra.update_layout(coloraxis_colorbar=dict(title='Transaction Amount'))
-
-    fig_tra.add_annotation(
-        text="Important Information",
-        x=0.5, y=-0.1,
-        showarrow=False,
-        font=dict(size=14, color="black"),
-        bgcolor="white",
-        bordercolor="black",
-        borderwidth=1,
-        opacity=0.8
-    )
-
-    # Optional: Adjust animation speed
-    fig_tra.frames[0].update(layout_updatemenus=[
-        dict(type="buttons", showactive=False, buttons=[
-            dict(label="Play", method="animate", args=[None, dict(frame=dict(duration=1000, redraw=True), fromcurrent=True)])
-        ])
-    ])
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_tra)
 
+
+
 # fetching transaction_type & count from aggre_trans 
     
+
 def payment_count(Aggregated_Trans):
     attype = Aggregated_Trans[["Trans_Name", "Trans_Count"]]
     
     # Group the data by Transaction_type and calculate the sum of Transaction_count
     att1 = attype.groupby("Trans_Name")["Trans_Count"].sum().reset_index()
 
-    fig_pc = px.bar(
+    # Pie chart
+    fig_pc = px.pie(
         att1,
-        x="Trans_Name",
-        y="Trans_Count",
-        title="Transaction Type and Transaction Count",
-        color="Trans_Count",
-        color_continuous_scale="Redor",
+        names="Trans_Name",
+        values="Trans_Count",
+        title="Transaction Type Distribution",
         labels={"Trans_Count": "Transaction Count"},
+        hole=0.4,  # Add a hole in the middle to make it a donut chart
+        color_discrete_sequence=px.colors.qualitative.Dark24,
     )
 
     fig_pc.update_layout(
-        width=800,
+        width=700,
         height=500,
-        xaxis_title="Transaction Type",
-        yaxis_title="Transaction Count",
         title_font=dict(size=25),
         coloraxis_colorbar=dict(title='Transaction Count'),
     )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_pc)
+
 
 
 
@@ -185,24 +161,25 @@ def animate_all_count(Aggregated_Trans):
 
     merged_df = pd.concat(frames)
 
-    fig_tra = px.choropleth(
+    # Line plot
+    fig_tra = px.line(
         merged_df,
-        geojson=data1,
-        locations="States",
-        featureidkey="properties.ST_NM",
-        color="Trans_Count",
-        color_continuous_scale="Viridis",  # Adjust color scale
-        range_color=(0, 3000000),
+        x="States",
+        y="Trans_Count",
+        color="Years",
+        line_group="Quarter",
+        labels={"Trans_Count": "Transaction Count"},
         title="Transaction Count Across States Over Time",
-        hover_name="States",
-        animation_frame="Years",
-        animation_group="Quarter"
+        height=500,
+        width=800
     )
 
-    fig_tra.update_geos(fitbounds="locations", visible=False)
-    fig_tra.update_layout(width=800, height=700)
-    fig_tra.update_layout(title_font={"size": 25})
-    fig_tra.update_layout(coloraxis_colorbar=dict(title='Transaction Count'))
+    fig_tra.update_layout(
+        xaxis_title="States",
+        yaxis_title="Transaction Count",
+        title_font=dict(size=25),
+        legend_title="Year",
+    )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_tra)
@@ -214,21 +191,24 @@ def payment_amount(Aggregated_Trans):
     att1 = attype.groupby("Trans_Name")["Trans_Amount"].sum().reset_index()
     att1_sorted = att1.sort_values(by="Trans_Amount", ascending=False)
 
+    # Horizontal bar chart with logarithmic y-axis scale
     fig_tra_pa = px.bar(
         att1_sorted,
-        x="Trans_Name",
-        y="Trans_Amount",
+        y="Trans_Name",
+        x="Trans_Amount",
         title="Transaction Type and Transaction Amount",
         color="Trans_Amount",
         color_continuous_scale="Blues",
         labels={"Trans_Amount": "Transaction Amount"},
+        orientation='h',  # Horizontal bar chart
+        log_x=True,  # Logarithmic scale for x-axis
     )
 
     fig_tra_pa.update_layout(
-        width=800,
         height=600,
-        xaxis_title="Transaction Type",
-        yaxis_title="Transaction Amount",
+        width=800,
+        yaxis_title="Transaction Type",
+        xaxis_title="Transaction Amount (log scale)",
         title_font=dict(size=25),
         coloraxis_colorbar=dict(title='Transaction Amount'),
     )
@@ -236,35 +216,43 @@ def payment_amount(Aggregated_Trans):
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_tra_pa)
 
-def reg_all_states(Map_User, state):
-    mu = Map_User[["States", "Map_Dist", "Map_Users"]]
-    mu_state = mu[mu["States"] == state]
 
-    # Group the data by Districts and calculate the sum of RegisteredUser
+
+
+# Set Plotly renderer to "iframe_connected"
+pio.renderers.default = "iframe_connected"
+
+
+def reg_all_states(Map_User, selected_state):
+    mu = Map_User[["States", "Map_Dist", "Map_Users"]]
+    mu_state = mu[mu["States"] == selected_state]
+
+    # Group the data by Districts and calculate the sum of Registered Users
     mu_districts = mu_state.groupby("Map_Dist")["Map_Users"].sum().reset_index()
 
+    # Bar chart with hover data
     fig_mu = px.bar(
         mu_districts,
         x="Map_Dist",
         y="Map_Users",
-        title=f"Registered Users in {state} - District Wise",
+        title=f"Registered Users in {selected_state} - District Wise",
         color="Map_Users",
-        color_continuous_scale="Bluered",
+        color_continuous_scale=px.colors.sequential.Blues,  # Adjust color scale
         labels={"Map_Users": "Registered Users"},
+        text="Map_Users",  # Add Map_Users to text parameter for hover text
     )
 
     fig_mu.update_layout(
-        width=1000,
-        height=500,
+        width=800,
+        height=600,
         xaxis_title="Districts",
         yaxis_title="Registered Users",
         title_font=dict(size=25),
         coloraxis_colorbar=dict(title='Registered Users'),
+        hovermode="x unified",  # Display hover info only along the x-axis
     )
 
-    # Display the plotly chart using Streamlit
-    st.plotly_chart(fig_mu)
-
+    return fig_mu
 
 
 def transaction_amount_year(Aggregated_Trans, selected_year):
@@ -282,26 +270,28 @@ def transaction_amount_year(Aggregated_Trans, selected_year):
     # Group the data by States and calculate the sum of Transaction_amount
     atay2 = atay1.groupby("States")["Trans_Amount"].sum().reset_index()
 
-    fig_atay = px.choropleth(
+    # Bar plot
+    fig_atay = px.bar(
         atay2,
-        geojson=data1,
-        locations="States",
-        featureidkey="properties.ST_NM",
+        x="States",
+        y="Trans_Amount",
+        title=f"Transaction Amount Across States - {year}",
         color="Trans_Amount",
         color_continuous_scale="rainbow",
-        range_color=(0, 800000000000),
-        title=f"Transaction Amount Across States - {year}",
-        hover_name="States"
+        labels={"Trans_Amount": "Transaction Amount"},
     )
 
-    fig_atay.update_geos(fitbounds="locations", visible=False)
-    fig_atay.update_layout(width=800, height=600)
-    fig_atay.update_layout(title_font={"size": 25})
-    fig_atay.update_layout(coloraxis_colorbar=dict(title='Transaction Amount'))
+    fig_atay.update_layout(
+        width=800,
+        height=600,
+        xaxis_title="States",
+        yaxis_title="Transaction Amount",
+        title_font={"size": 25},
+        coloraxis_colorbar=dict(title='Transaction Amount'),
+    )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_atay)
-
 
 def payment_count_year(Aggregated_Trans, selected_year):
     year = int(selected_year)
@@ -311,27 +301,27 @@ def payment_count_year(Aggregated_Trans, selected_year):
     # Group the data by Transaction_type and calculate the sum of Transaction_count
     apc2 = apc1.groupby("Trans_Name")["Trans_Count"].sum().reset_index()
 
-    fig_apc = px.bar(
+    # Pie chart
+    fig_apc = px.pie(
         apc2,
-        x="Trans_Name",
-        y="Trans_Count",
+        names="Trans_Name",
+        values="Trans_Count",
         title=f"Payment Count by Type - {year}",
-        color="Trans_Count",
-        color_continuous_scale="Brwnyl",
         labels={"Trans_Count": "Payment Count"},
+        hole=0.3,  # Add a hole in the middle to make it a donut chart
+        color_discrete_sequence=px.colors.qualitative.Set3,
     )
 
     fig_apc.update_layout(
         width=800,
         height=600,
-        xaxis_title="Payment Type",
-        yaxis_title="Payment Count",
         title_font=dict(size=25),
         coloraxis_colorbar=dict(title='Payment Count'),
     )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_apc)
+
 
 def transaction_count_year(Aggregated_Trans, selected_year):
     url = "https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson"
@@ -347,25 +337,29 @@ def transaction_count_year(Aggregated_Trans, selected_year):
     atcy1 = atcy.loc[atcy["Years"] == year]
     atcy2 = atcy1.groupby("States")["Trans_Count"].sum().reset_index()  # Calculating the total transaction_count
 
-    fig_atcy = px.choropleth(
+    # Bar plot
+    fig_atcy = px.bar(
         atcy2,
-        geojson=data1,
-        locations="States",
-        featureidkey="properties.ST_NM",
+        x="States",
+        y="Trans_Count",
+        title=f"Transaction Count Across States - {year}",
         color="Trans_Count",
         color_continuous_scale="rainbow",
-        range_color=(0, 3000000000),
-        title=f"Transaction Count Across States - {year}",
-        hover_name="States"
+        labels={"Trans_Count": "Transaction Count"},
     )
 
-    fig_atcy.update_geos(fitbounds="locations", visible=False)
-    fig_atcy.update_layout(width=800, height=700)
-    fig_atcy.update_layout(title_font={"size": 25})
-    fig_atcy.update_layout(coloraxis_colorbar=dict(title='Transaction Count'))
+    fig_atcy.update_layout(
+        width=800,
+        height=600,
+        xaxis_title="States",
+        yaxis_title="Transaction Count",
+        title_font={"size": 25},
+        coloraxis_colorbar=dict(title='Transaction Count'),
+    )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_atcy)
+
 
 def payment_amount_year(Aggregated_Trans, selected_year):
     year = int(selected_year)
@@ -377,27 +371,27 @@ def payment_amount_year(Aggregated_Trans, selected_year):
     # Group the data by Transaction_type and calculate the sum of Transaction_amount
     apay_grouped = apay_year.groupby("Trans_Name")["Trans_Amount"].sum().reset_index()
 
-    fig_apay = px.bar(
+    # Pie chart
+    fig_apay = px.pie(
         apay_grouped,
-        x="Trans_Name",
-        y="Trans_Amount",
-        title=f"Payment Type and Payment Amount - {year}",
-        color="Trans_Amount",
-        color_continuous_scale="Burg",
+        names="Trans_Name",
+        values="Trans_Amount",
+        title=f"Payment Type Distribution - {year}",
         labels={"Trans_Amount": "Payment Amount"},
+        hole=0.3,  # Add a hole in the middle to make it a donut chart
+        color_discrete_sequence=px.colors.qualitative.Set3,
     )
 
     fig_apay.update_layout(
         width=800,
         height=600,
-        xaxis_title="Payment Type",
-        yaxis_title="Payment Amount",
         title_font=dict(size=25),
         coloraxis_colorbar=dict(title='Payment Amount'),
     )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_apay)
+
 
 
 def reg_state_all_RU(Map_User, selected_year, selected_state):
@@ -410,14 +404,17 @@ def reg_state_all_RU(Map_User, selected_year, selected_state):
     # Group the data by Districts and calculate the sum of Registered Users
     mus_districts = mus_year_state.groupby("Map_Dist")["Map_Users"].sum().reset_index()
 
-    fig_mus = px.bar(
+    # Scatter plot with hover data
+    fig_mus = px.scatter(
         mus_districts,
         x="Map_Dist",
         y="Map_Users",
+        size="Map_Users",
         title=f"Registered Users in {selected_state} - District Wise ({year})",
         color="Map_Users",
         color_continuous_scale="Cividis",
         labels={"Map_Users": "Registered Users"},
+        hover_data={"Map_Dist": True, "Map_Users": ":.2f"},  # Add Map_Dist and Map_Users to hover data
     )
 
     fig_mus.update_layout(
@@ -425,12 +422,17 @@ def reg_state_all_RU(Map_User, selected_year, selected_state):
         height=600,
         xaxis_title="Districts",
         yaxis_title="Registered Users",
-        title_font=dict(size=25),
+        title_text=f"Registered Users in {selected_state} - District Wise ({year})",  # Set title_text directly
+        title_font=dict(size=24, family="Arial", color="black"),  # Customize title font
         coloraxis_colorbar=dict(title='Registered Users'),
+        hoverlabel=dict(bgcolor="white", font_size=16, bordercolor="black"),  # Customize hover label
+        hovermode="x unified",  # Display hover info only along the x-axis
+        margin=dict(l=50, r=50, t=50, b=50),  # Add margin for better spacing
     )
 
     # Display the plotly chart using Streamlit
     st.plotly_chart(fig_mus)
+
 
 def reg_state_all_TA(Map_Trans, selected_year, selected_state):
     year = int(selected_year)
@@ -442,13 +444,15 @@ def reg_state_all_TA(Map_Trans, selected_year, selected_state):
     # Group the data by Districts and calculate the sum of Transaction Amount
     mts_districts = mts_year_state.groupby("Map_Dist")["Map_Amount"].sum().reset_index()
 
-    fig_mts = px.bar(
+    # Scatter plot
+    fig_mts = px.scatter(
         mts_districts,
         x="Map_Dist",
         y="Map_Amount",
+        size="Map_Amount",
         title=f"Transaction Amount in {selected_state} - District Wise ({year})",
         color="Map_Amount",
-        color_continuous_scale="Darkmint",
+        color_continuous_scale="Cividis",
         labels={"Map_Amount": "Transaction Amount"},
     )
 
@@ -461,9 +465,7 @@ def reg_state_all_TA(Map_Trans, selected_year, selected_state):
         coloraxis_colorbar=dict(title='Transaction Amount'),
     )
 
-    # Display the plotly chart using Streamlit
-    st.plotly_chart(fig_mts)
-
+    return fig_mts
 #------------- Query-----------#
 
 def ques1():
@@ -604,7 +606,7 @@ if selected == "Home":
 
 #ANALYSIS PAGE 
 if selected == "Analysis":
-    # Import your visualization functions here (animate_all_amount, payment_count, etc.)
+    
     selected_state = None  # Declare selected_state globally
     
     def main():
@@ -630,9 +632,12 @@ if selected == "Analysis":
             animate_all_count(Aggregated_Trans)
             payment_amount(Aggregated_Trans)
 
-        global selected_state  # Use the global selected_state
-        selected_state = st.selectbox("Select the State", get_state_names())
-        reg_all_states(Map_User,selected_state)
+  
+        # Streamlit app
+        st.title("Registered Users Visualization")
+        selected_state = st.selectbox("Select State", Map_User["States"].unique())
+        fig_mu = reg_all_states(Map_User, selected_state)
+        st.plotly_chart(fig_mu)
 
     def show_yearly_analysis(selected_year):
         col1, col2 = st.columns(2)
@@ -644,20 +649,21 @@ if selected == "Analysis":
         with col2:
             transaction_count_year(Aggregated_Trans, selected_year)
             payment_amount_year(Aggregated_Trans, selected_year)
+        
+        # Streamlit app
+        st.title("Registered Users Visualization")
+        selected_state = st.selectbox("Select State", Map_User["States"].unique())
+        selected_year = st.selectbox("Select Year", Map_User["Years"].unique())
+        reg_state_all_RU(Map_User, selected_year, selected_state)
+     
+        # Streamlit app
+        st.title("Transaction Amount Visualization")
+        selected_state_trans = st.selectbox("Select State", Map_Trans["States"].unique(), key="state_selector")
+        selected_year_trans = st.selectbox("Select Year", Map_Trans["Years"].unique(), key="year_selector")
+        fig_mts = reg_state_all_TA(Map_Trans, selected_year_trans, selected_state_trans)
+        st.plotly_chart(fig_mts)
 
-            global selected_state  # Use the global selected_state
-            selected_state = st.selectbox("Select the State", get_state_names())
-            reg_state_all_RU(selected_year)
-            reg_state_all_TA(selected_year)
-
-
-    def get_state_names():
-        return ['Andaman & Nicobar', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chandigarh', 'Chhattisgarh',
-                'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh',
-                'Jammu & Kashmir', 'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh',
-                'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan',
-                'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal']
-
+    
     if __name__ == "__main__":
         main()
 
@@ -669,6 +675,7 @@ if selected == "Insights":
                                   'Top 10 States With AppOpens','Least 10 States With AppOpens','States With Lowest Trasaction Count',
                                  'States With Highest Trasaction Count','States With Highest Trasaction Amount',
                                  'Top 50 Districts With Lowest Transaction Amount'))
+    
     if ques=="Top Brands Of Mobiles Used":
         ques1()
 
@@ -723,79 +730,4 @@ if selected == "Insights":
 
 
 
-
-
-
-
-# st.set_page_config(page_title="Phonepe",
-#                     layout="wide")
-# selected = option_menu(None,
-#                        options = ["About","Home","Analysis","Insights"],
-#                        icons = ["bar-chart","house","toggles","at"],
-#                        default_index=0,
-#                        orientation="horizontal",
-#                        styles={"container": {"width": "100%"},
-#                                 "icon": {"color": "white", "font-size": "24px"},
-#                                 "nav-link": {"font-size": "24px", "text-align": "center", "margin": "-4px" ,"--hover-color": "#800080"},
-#                                 "nav-link-selected": {"background-color": "#800080"},
-#                                 "nav": {"background-color": "#E6E6FA"}})
-
-# # ABOUT PAGE
-# if selected == "About":
-#     col1, col2 = st.columns(2)
-#     col1.image("https://tse3.mm.bing.net/th?id=OIP.eCSo2z86EagDx42Ie9-9RQHaDt&pid=Api&P=0&h=180", width=500)
-    
-#     with col1:
-#         st.subheader(
-#             "PhonePe  is an Indian digital payments and financial technology company headquartered in Bengaluru, Karnataka, India. PhonePe was founded in December 2015, by Sameer Nigam, Rahul Chari and Burzin Engineer. The PhonePe app, based on the Unified Payments Interface (UPI), went live in August 2016. It is owned by Flipkart, a subsidiary of Walmart.")
-#         st.markdown("[Download App](https://www.phonepe.com/app-download/)")
-
-#     with col2:
-#         st.image("https://www.techgenyz.com/wp-content/uploads/2021/09/PhonePe.jpg")
-    
-#     st.write("----")
-
-# # HOME PAGE
-# if selected == "Home":
-#     col1,col2 = st.columns(2)
-#     with col1:
-#         st.video("https://youtu.be/c_1H6vivsiA")
-    
-#     with col2:
-#         st.title(':violet[PHONEPE PULSE DATA VISUALISATION]')
-#         st.subheader(':violet[Phonepe Pulse]:')
-#         st.write('PhonePe Pulse is a feature offered by the Indian digital payments platform called PhonePe.PhonePe Pulse provides users with insights and trends related to their digital transactions and usage patterns on the PhonePe app.')
-#         st.subheader(':violet[Phonepe Pulse Data Visualisation]:')
-#         st.write('Data visualization refers to the graphical representation of data using charts, graphs, and other visual elements to facilitate understanding and analysis in a visually appealing manner.'
-#                  'The goal is to extract this data and process it to obtain insights and information that can be visualized in a user-friendly manner.')
-
-#     st.write("----")
-
-# # ANALYSIS PAGE
-# if selected == "Analysis":
-#     st.title(':violet[ANALYSIS]')
-#     st.subheader('Analysis done on the basis of All India ,States, Districts and Top categories between 2018 and 2023')
-#     select = option_menu(None,
-#                          options=["INDIA", "STATES", "TOP CATEGORIES" ],
-#                          default_index=0,
-#                          orientation="horizontal",
-#                          styles={"container": {"width": "100%"},
-#                                    "nav-link": {"font-size": "20px", "text-align": "center", "margin": "-2px"},
-#                                    "nav-link-selected": {"background-color": "#6F36AD"}})
-    
-#     if select == "INDIA":
-#         tab1, tab2 = st.tabs(["TRANSACTION","USER"])
-
-#          # TRANSACTION TAB
-#         with tab1:
-#             col1, col2, col3 = st.columns(3)
-#             with col1:
-#                 year = st.selectbox('**Select Year**', ('2018', '2019', '2020', '2021', '2022','2023'), key='year')
-#             with col2:
-#                 qtr = st.selectbox('**Select Quarter**', ('1', '2', '3', '4'), key='qtr')
-#             with col3:
-#                 tran_type = st.selectbox('**Select Transaction type**',
-#                                             ('Recharge & bill payments', 'Peer-to-peer payments',
-#                                              'Merchant payments', 'Financial Services', 'Others'), key='tran_type')
-                
 
