@@ -19,7 +19,7 @@ Getting Started
 
 To access and utilize PhonePe Pulse:
 
-Clone the repository: Use git clone https://github.com/YOUR_USERNAME/PhonePe-Pulse.git (replace YOUR_USERNAME with your GitHub username).
+Clone the repository: Use git clone https://github.com/suman98kumar/phonepeproject.git.
 Explore the folders: Each folder may contain datasets, scripts, and documentation for specific analyses.
 Follow individual project READMEs: Each project may have its own instructions for setting up and running the code.
 Contribute and share: If you have new insights or visualizations, consider contributing to the repository and sharing your findings with others.
