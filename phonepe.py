@@ -198,7 +198,7 @@ def payment_amount(Aggregated_Trans):
         x="Trans_Amount",
         title="Transaction Type and Transaction Amount",
         color="Trans_Amount",
-        color_continuous_scale="Blues",
+        color_continuous_scale="Blues_r",
         labels={"Trans_Amount": "Transaction Amount"},
         orientation='h',  # Horizontal bar chart
         log_x=True,  # Logarithmic scale for x-axis
@@ -237,7 +237,7 @@ def reg_all_states(Map_User, selected_state):
         y="Map_Users",
         title=f"Registered Users in {selected_state} - District Wise",
         color="Map_Users",
-        color_continuous_scale=px.colors.sequential.Blues,  # Adjust color scale
+        color_continuous_scale=px.colors.sequential.Viridis_r,  # Adjust color scale
         labels={"Map_Users": "Registered Users"},
         text="Map_Users",  # Add Map_Users to text parameter for hover text
     )
@@ -277,7 +277,7 @@ def transaction_amount_year(Aggregated_Trans, selected_year):
         y="Trans_Amount",
         title=f"Transaction Amount Across States - {year}",
         color="Trans_Amount",
-        color_continuous_scale="rainbow",
+        color_continuous_scale="Viridis",
         labels={"Trans_Amount": "Transaction Amount"},
     )
 
@@ -309,7 +309,7 @@ def payment_count_year(Aggregated_Trans, selected_year):
         title=f"Payment Count by Type - {year}",
         labels={"Trans_Count": "Payment Count"},
         hole=0.3,  # Add a hole in the middle to make it a donut chart
-        color_discrete_sequence=px.colors.qualitative.Set3,
+        color_discrete_sequence=px.colors.qualitative.Set3_r,
     )
 
     fig_apc.update_layout(
@@ -452,7 +452,7 @@ def reg_state_all_TA(Map_Trans, selected_year, selected_state):
         size="Map_Amount",
         title=f"Transaction Amount in {selected_state} - District Wise ({year})",
         color="Map_Amount",
-        color_continuous_scale="Cividis",
+        color_continuous_scale="Plasma",
         labels={"Map_Amount": "Transaction Amount"},
     )
 
@@ -569,9 +569,9 @@ selected = option_menu(None,
                         orientation="horizontal",
                         styles={"container": {"width": "100%"},
                                 "icon": {"color": "white", "font-size": "24px"},
-                                 "nav-link": {"font-size": "24px", "text-align": "center", "margin": "-4px" ,"--hover-color": "#800080"},
-                                "nav-link-selected": {"background-color": "#800080"},
-                                "nav": {"background-color": "#E6E6FA"}})
+                                 "nav-link": {"font-size": "24px", "text-align": "center", "margin": "-4px" ,"--hover-color": "#F08080"},
+                                "nav-link-selected": {"background-color": "#F08080"},
+                                "nav": {"background-color": "#ADD8E6"}})
 
 # ABOUT PAGE
 if selected == "About":
@@ -595,10 +595,10 @@ if selected == "Home":
         st.video("https://youtu.be/c_1H6vivsiA")
     
     with col2:
-        st.title(':violet[PHONEPE PULSE DATA VISUALISATION]')
-        st.subheader(':violet[Phonepe Pulse]:')
+        st.title('PHONEPE PULSE DATA VISUALISATION')
+        st.subheader('Phonepe Pulse')
         st.write('PhonePe Pulse is a feature offered by the Indian digital payments platform called PhonePe.PhonePe Pulse provides users with insights and trends related to their digital transactions and usage patterns on the PhonePe app.')
-        st.subheader(':violet[Phonepe Pulse Data Visualisation]:')
+        st.subheader('Phonepe Pulse Data Visualisation')
         st.write('Data visualization refers to the graphical representation of data using charts, graphs, and other visual elements to facilitate understanding and analysis in a visually appealing manner.'
                  'The goal is to extract this data and process it to obtain insights and information that can be visualized in a user-friendly manner.')
 
@@ -670,11 +670,16 @@ if selected == "Analysis":
 #INSIGHTS PAGE
 if selected == "Insights":
 
-    ques= st.selectbox("select the question",('Top Brands Of Mobiles Used','States With Lowest Trasaction Amount',
-                                  'Districts With Highest Transaction Amount','Top 10 Districts With Lowest Transaction Amount',
-                                  'Top 10 States With AppOpens','Least 10 States With AppOpens','States With Lowest Trasaction Count',
-                                 'States With Highest Trasaction Count','States With Highest Trasaction Amount',
-                                 'Top 50 Districts With Lowest Transaction Amount'))
+    ques= st.selectbox("select the question",('Top Brands Of Mobiles Used',
+                                            'States With Lowest Trasaction Amount',
+                                            'Districts With Highest Transaction Amount',
+                                            'Top 10 Districts With Lowest Transaction Amount',
+                                            'Top 10 States With AppOpens',
+                                            'Least 10 States With AppOpens',
+                                            'States With Lowest Trasaction Count',
+                                            'States With Highest Trasaction Count',
+                                            'States With Highest Trasaction Amount',
+                                            'Top 50 Districts With Lowest Transaction Amount'))
     
     if ques=="Top Brands Of Mobiles Used":
         ques1()
@@ -705,29 +710,3 @@ if selected == "Insights":
 
     elif ques=="Top 50 Districts With Lowest Transaction Amount":
         ques10()
-
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
